@@ -39,7 +39,7 @@ const generateReceiptPDF = (deposit, user, admin) => {
       doc.pipe(stream);
 
       // --- Header ---
-      doc.fontSize(24).font('Helvetica-Bold').text('AHORROS KINGDOM', { align: 'center' });
+      doc.fontSize(24).font('Helvetica-Bold').text('SISTEMA DE AHORROS ENERGY', { align: 'center' });
       doc.moveDown(0.2);
       doc.fontSize(10).font('Helvetica').text('RECIBO DE DEPÓSITO', { align: 'center' });
       doc.fontSize(9).fillColor('#666').text('Plan de Ahorro Comunitario', { align: 'center' });
@@ -118,7 +118,7 @@ const generateReceiptPDF = (deposit, user, admin) => {
       doc.moveTo(50, bottom - 10).lineTo(545, bottom - 10).strokeColor('#cccccc').stroke();
       
       doc.fontSize(8).fillColor('#999').font('Helvetica').text(
-        'Este es un recibo automático generado por el sistema de Ahorros Kingdom. Por favor conserve este comprobante.',
+        'Este es un recibo automático generado por el sistema de Sistema de ahorros ENERGY. Por favor conserve este comprobante.',
         50, bottom, { align: 'center', width: 495 }
       );
       doc.text(`Generado el: ${new Date().toLocaleString('es-BO')}`, { align: 'center' });
@@ -184,7 +184,7 @@ const generateWhatsAppLinkWithImage = (phoneNumber, deposit, user, pdfUrl) => {
   const totalSaved = user.totalSaved || 0;
 
   // Mensaje de WhatsApp
-  const message = `🏰 *RECIBO DE DEPÓSITO - AHORROS KINGDOM* 🏰\n\n` +
+  const message = `*RECIBO DE DEPÓSITO - SISTEMA DE AHORROS ENERGY*\n\n` +
     `Hola ${user.name.split(' ')[0]},\n\n` +
     `Tu depósito ha sido registrado exitosamente:\n\n` +
     `*Monto Depositado:* Bs. ${deposit.amount.toFixed(2)}\n` +
