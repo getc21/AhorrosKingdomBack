@@ -43,7 +43,13 @@ const authorize = (...roles) => {
   };
 };
 
+/**
+ * Middleware to check if user is admin (shortcut)
+ */
+const adminOnly = authorize('ADMIN');
+
 module.exports = {
   protect,
   authorize,
+  adminOnly,
 };

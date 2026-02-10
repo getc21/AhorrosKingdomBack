@@ -27,8 +27,13 @@ const UserSchema = new mongoose.Schema(
     },
     planType: {
       type: String,
-      enum: ['Ahorro Campamento 2027', 'Ahorro Otras Actividades'],
-      default: 'Ahorro Campamento 2027',
+      sparse: true,
+      default: null,
+    },
+    registeredEvents: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: 'Event',
+      default: [],
     },
     isActive: {
       type: Boolean,

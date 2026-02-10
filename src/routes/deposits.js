@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   createDeposit,
   getMyDeposits,
+  getMyDepositsByEvent,
   getUserDeposits,
   getAllDeposits,
   getDepositReceipt,
@@ -18,6 +19,9 @@ router.get('/:depositId/receipt', getDepositReceipt);
 // Get current user deposits
 router.get('/my', protect, getMyDeposits);
 
+// Get current user deposits by event
+router.get('/my/:eventId', protect, getMyDepositsByEvent);
+
 // Get user deposits by ID (admin only)
 router.get('/user/:id', protect, authorize('ADMIN'), getUserDeposits);
 
@@ -30,6 +34,7 @@ router.post(
   [
     body('userId').notEmpty().withMessage('User ID is required'),
     body('amount').isFloat({ min: 5 }).withMessage('Amount must be at least 5'),
+    body('eventId').notEmpty().withMessage('Event ID is required'),
   ],
   handleValidationErrors,
   createDeposit

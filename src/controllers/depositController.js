@@ -10,11 +10,11 @@ const { checkBadges } = require('../config/badges');
  */
 exports.createDeposit = async (req, res) => {
   try {
-    const { userId, amount } = req.body;
+    const { userId, amount, eventId } = req.body;
 
     // Validation
-    if (!userId || !amount) {
-      return res.status(400).json({ success: false, message: 'Please provide userId and amount' });
+    if (!userId || !amount || !eventId) {
+      return res.status(400).json({ success: false, message: 'Please provide userId, amount, and eventId' });
     }
 
     if (amount < 5) {
@@ -27,27 +27,37 @@ exports.createDeposit = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
+    // Check if event exists
+    const Event = require('../models/Event');
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+
     // Create deposit
     const deposit = await Deposit.create({
       userId,
+      eventId,
       amount,
       createdBy: req.user._id,
     });
 
     await deposit.populate('userId', 'name phone planType');
     await deposit.populate('createdBy', 'name');
+    await deposit.populate('eventId', 'name emoji goal');
 
-    // Calcular total ahorrado antes de crear el depósito
-    const allDeposits = await Deposit.find({ userId }).sort({ createdAt: 1 });
+    // Calcular total ahorrado para este evento antes de crear el depósito
+    const allDeposits = await Deposit.find({ userId, eventId }).sort({ createdAt: 1 });
     const totalSaved = allDeposits.reduce((sum, d) => sum + (d.amount || 0), 0);
     const depositCount = allDeposits.length;
 
     // Verificar nuevas insignias
+    const checkBadges = require('../config/badges').checkBadges;
     const newBadges = checkBadges(
       user,
       depositCount,
       totalSaved,
-      user.goal || 500,
+      event.goal || 500,
       null,
       allDeposits
     );
@@ -64,11 +74,12 @@ exports.createDeposit = async (req, res) => {
       const userFull = await User.findById(userId);
       
       // Calcular total ahorrado
-      const allDepositsForReceipt = await Deposit.find({ userId });
+      const allDepositsForReceipt = await Deposit.find({ userId, eventId });
       const totalSavedForReceipt = allDepositsForReceipt.reduce((sum, d) => sum + (d.amount || 0), 0);
       userFull.totalSaved = totalSavedForReceipt;
       
       // Generar PDF
+      const generateReceiptPDF = require('../utils/receiptGenerator').generateReceiptPDF;
       const pdfPath = await generateReceiptPDF(deposit, userFull, admin);
       
       // Obtener URL del PDF
@@ -76,6 +87,7 @@ exports.createDeposit = async (req, res) => {
       const pdfUrl = `${process.env.BACKEND_URL || 'http://localhost:5000'}/receipts/${pdfFileName}`;
       
       // Generar link de WhatsApp con PDF
+      const generateWhatsAppLinkWithImage = require('../utils/receiptGenerator').generateWhatsAppLinkWithImage;
       const whatsappLink = generateWhatsAppLinkWithImage(userFull.phone, deposit, userFull, pdfUrl);
       
       // Agregar datos al objeto de respuesta
@@ -104,8 +116,12 @@ exports.getDepositReceipt = async (req, res) => {
   try {
     const { depositId } = req.params;
     
-    // Verificar que el depósito existe
-    const deposit = await Deposit.findById(depositId).populate('userId').populate('createdBy');
+    // Verificar que el depósito existe y Popular los campos relacionados
+    const deposit = await Deposit.findById(depositId)
+      .populate('userId')
+      .populate('createdBy')
+      .populate('eventId', 'name emoji goal');
+    
     if (!deposit) {
       return res.status(404).json({ success: false, message: 'Deposit not found' });
     }
@@ -133,6 +149,26 @@ exports.getDepositReceipt = async (req, res) => {
 };
 
 /**
+ * @route   GET /api/deposits/my/:eventId
+ * @desc    Get current user deposits for a specific event
+ * @access  Private
+ */
+exports.getMyDepositsByEvent = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    
+    const deposits = await Deposit.find({ userId: req.user._id, eventId })
+      .populate('createdBy', 'name')
+      .populate('eventId', 'name goal')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({ success: true, data: deposits });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/**
  * @route   GET /api/deposits/my
  * @desc    Get current user deposits
  * @access  Private
@@ -141,6 +177,7 @@ exports.getMyDeposits = async (req, res) => {
   try {
     const deposits = await Deposit.find({ userId: req.user._id })
       .populate('createdBy', 'name')
+      .populate('eventId', 'name goal emoji')
       .sort({ createdAt: -1 });
 
     res.status(200).json({ success: true, data: deposits });

@@ -5,21 +5,28 @@ const { generateMotivationalMessage } = require('../utils/messageGenerator');
 const SAVINGS_GOAL = 500; // Bs
 
 /**
- * @route   GET /api/dashboard/me
- * @desc    Get user dashboard with savings info
+ * @route   GET /api/dashboard/me?eventId=...
+ * @desc    Get user dashboard with savings info (optionally filtered by event)
  * @access  Private
  */
 exports.getDashboard = async (req, res) => {
   try {
     const userId = req.user._id;
-    console.log('📊 Dashboard Request - User ID:', userId);
+    const { eventId } = req.query;
+    console.log('📊 Dashboard Request - User ID:', userId, 'Event ID:', eventId);
 
-    // Get all deposits for user
-    const deposits = await Deposit.find({ userId })
+    // Build query filter
+    const depositFilter = { userId };
+    if (eventId) {
+      depositFilter.eventId = eventId;
+    }
+
+    // Get all deposits for user (filtered by event if provided)
+    const deposits = await Deposit.find(depositFilter)
+      .populate('eventId', 'name goal isPrimary emoji')
       .sort({ createdAt: -1 });
     
     console.log('💰 Deposits found:', deposits.length);
-    console.log('Deposits:', deposits);
 
     // Calculate totals
     const totalSaved = deposits.reduce((sum, dep) => sum + dep.amount, 0);
@@ -49,6 +56,8 @@ exports.getDashboard = async (req, res) => {
           amount: d.amount,
           date: d.createdAt,
           description: d.description,
+          eventName: d.eventId?.name,
+          eventEmoji: d.eventId?.emoji,
         })),
       },
     });
@@ -116,19 +125,34 @@ exports.getUserDashboard = async (req, res) => {
 };
 
 /**
- * @route   GET /api/dashboard/ranking
- * @desc    Get ranking of users by total savings
+ * @route   GET /api/dashboard/ranking?eventId=...
+ * @desc    Get ranking of users by total savings (optionally filtered by event)
  * @access  Private
  */
 exports.getRanking = async (req, res) => {
   try {
-    // Get all active users
-    const users = await User.find({ isActive: true, role: 'USER' });
+    const { eventId } = req.query;
+    
+    // Build user filter
+    let userFilter = { isActive: true, role: 'USER' };
+    
+    // If eventId is provided, only get users registered in that event
+    if (eventId) {
+      userFilter.registeredEvents = eventId;
+    }
+    
+    // Get filtered users
+    const users = await User.find(userFilter);
 
     // Calculate totals for each user
     const ranking = await Promise.all(
       users.map(async (user) => {
-        const deposits = await Deposit.find({ userId: user._id });
+        const depositFilter = { userId: user._id };
+        if (eventId) {
+          depositFilter.eventId = eventId;
+        }
+        
+        const deposits = await Deposit.find(depositFilter);
         const totalSaved = deposits.reduce((sum, dep) => sum + dep.amount, 0);
         const depositCount = deposits.length;
         
@@ -143,11 +167,17 @@ exports.getRanking = async (req, res) => {
       })
     );
 
+    // Filter out users with 0 savings when viewing "Todos los eventos" (no eventId)
+    let filteredRanking = ranking;
+    if (!eventId) {
+      filteredRanking = ranking.filter(user => user.totalSaved > 0);
+    }
+
     // Sort by total saved (descending)
-    ranking.sort((a, b) => b.totalSaved - a.totalSaved);
+    filteredRanking.sort((a, b) => b.totalSaved - a.totalSaved);
 
     // Add position
-    const rankingWithPosition = ranking.map((user, index) => ({
+    const rankingWithPosition = filteredRanking.map((user, index) => ({
       position: index + 1,
       ...user,
     }));
@@ -197,8 +227,8 @@ exports.getAdminStats = async (req, res) => {
 };
 
 /**
- * @route   GET /api/dashboard/badges/my
- * @desc    Get current user badges
+ * @route   GET /api/dashboard/badges/my?eventId=...
+ * @desc    Get current user badges (optionally filtered by event)
  * @access  Private
  */
 exports.getMyBadges = async (req, res) => {
@@ -208,6 +238,73 @@ exports.getMyBadges = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
+    const { eventId } = req.query;
+    
+    // Si se proporciona eventId, filtrar las insignias relevantes para ese evento
+    if (eventId) {
+      // Obtener depósitos del usuario solo para esse evento
+      const deposits = await Deposit.find({ userId: req.user._id, eventId })
+        .select('amount');
+      
+      // Obtener información del evento
+      const Event = require('../models/Event');
+      const event = await Event.findById(eventId);
+      
+      if (!event) {
+        return res.status(404).json({ success: false, message: 'Event not found' });
+      }
+
+      // Calcular estadísticas para este evento específico
+      const depositCount = deposits.length;
+      const totalSaved = deposits.reduce((sum, dep) => sum + dep.amount, 0);
+      const goal = event.goal || 500;
+      
+      // Para el ranking en este evento, obtener todos los usuarios registrados en el evento
+      let position = null;
+      const eventUsers = await User.find({ registeredEvents: eventId, isActive: true });
+      const userRankings = await Promise.all(
+        eventUsers.map(async (u) => {
+          const userDeposits = await Deposit.find({ userId: u._id, eventId });
+          return {
+            userId: u._id,
+            totalSaved: userDeposits.reduce((sum, d) => sum + d.amount, 0),
+          };
+        })
+      );
+      
+      // Ordenar y asignar posición
+      userRankings.sort((a, b) => b.totalSaved - a.totalSaved);
+      const userRank = userRankings.findIndex(r => r.userId.toString() === req.user._id.toString());
+      position = userRank >= 0 ? userRank + 1 : null;
+      
+      // Filtrar insignias que son relevantes para eventos (excluir algunas que son globales)
+      const eventBadges = user.badges.filter((badge) => {
+        // Incluir insignias de progreso de depósitos, meta y ranking
+        const relevantBadgeIds = [
+          'primer_deposito',
+          'cinco_depositos',
+          'diez_depositos',
+          'cuarto_meta',
+          'mitad_meta',
+          'tres_cuartos_meta',
+          'meta_completa',
+          'top_tres',
+          'deposito_grande',
+        ];
+        return relevantBadgeIds.includes(badge.id);
+      });
+      
+      return res.status(200).json({
+        success: true,
+        data: {
+          badges: eventBadges || [],
+          totalBadges: (eventBadges || []).length,
+          eventId,
+        },
+      });
+    }
+
+    // Si no hay eventId, devolver todas las insignias
     res.status(200).json({
       success: true,
       data: {

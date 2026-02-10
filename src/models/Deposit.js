@@ -7,6 +7,11 @@ const DepositSchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'Please provide a user ID'],
     },
+    eventId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Event',
+      required: [true, 'Please provide an event ID'],
+    },
     amount: {
       type: Number,
       required: [true, 'Please provide an amount'],

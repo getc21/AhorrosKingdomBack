@@ -9,7 +9,7 @@ const { handleValidationErrors } = require('../utils/validators');
 router.post(
   '/register',
   protect,
-  authorize('admin'),
+  authorize('ADMIN'),
   [
     body('name').notEmpty().withMessage('Name is required'),
     body('phone').notEmpty().withMessage('Phone is required'),

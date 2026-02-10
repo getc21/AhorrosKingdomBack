@@ -67,6 +67,7 @@ const generateReceiptPDF = (deposit, user, admin) => {
       drawRow('Fecha:', new Date(deposit.createdAt).toLocaleDateString('es-BO', {
         year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
       }));
+      drawRow('Evento:', deposit.eventId ? `${deposit.eventId.emoji} ${deposit.eventId.name}` : 'No especificado');
 
       drawDivider();
 
@@ -182,11 +183,15 @@ const generateWhatsAppLinkWithImage = (phoneNumber, deposit, user, pdfUrl) => {
 
   // Calcular total actual
   const totalSaved = user.totalSaved || 0;
+  
+  // Obtener información del evento
+  const eventName = deposit.eventId?.name ? `${deposit.eventId.emoji} ${deposit.eventId.name}` : 'Evento no especificado';
 
   // Mensaje de WhatsApp
   const message = `*RECIBO DE DEPÓSITO - SISTEMA DE AHORROS ENERGY*\n\n` +
     `Hola ${user.name.split(' ')[0]},\n\n` +
     `Tu depósito ha sido registrado exitosamente:\n\n` +
+    `*Evento:* ${eventName}\n` +
     `*Monto Depositado:* Bs. ${deposit.amount.toFixed(2)}\n` +
     `*Ahorrado Hasta Hoy:* Bs. ${totalSaved.toFixed(2)}\n` +
     `*Plan:* ${user.planType}\n` +
