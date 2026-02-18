@@ -9,9 +9,21 @@ connectDB();
 
 const app = express();
 
-// CORS Configuration
+// CORS Configuration - Allow multiple origins
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://ahorroskingdomfront.netlify.app',
+      process.env.FRONTEND_URL
+    ].filter(Boolean); // Remove undefined values
+
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
