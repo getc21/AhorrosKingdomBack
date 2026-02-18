@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, changePassword, skipPasswordChange } = require('../controllers/authController');
+const { register, login, changePassword, skipPasswordChange, registerFirstAdmin } = require('../controllers/authController');
 const { protect, authorize } = require('../middleware/auth');
 const { body } = require('express-validator');
 const { handleValidationErrors } = require('../utils/validators');
@@ -28,6 +28,18 @@ router.post(
   ],
   handleValidationErrors,
   login
+);
+
+// Register First Admin (no auth required - only if no admins exist)
+router.post(
+  '/register-first-admin',
+  [
+    body('name').notEmpty().withMessage('Name is required'),
+    body('phone').notEmpty().withMessage('Phone is required'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  ],
+  handleValidationErrors,
+  registerFirstAdmin
 );
 
 // Change Password

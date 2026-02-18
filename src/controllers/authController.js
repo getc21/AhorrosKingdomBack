@@ -202,3 +202,58 @@ exports.skipPasswordChange = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+/**
+ * @route   POST /api/auth/register-first-admin
+ * @desc    Register the FIRST admin (no auth required)
+ * @access  Public - Only works if no admins exist
+ */
+exports.registerFirstAdmin = async (req, res) => {
+  try {
+    const { name, phone, password } = req.body;
+
+    // Check if any admin already exists
+    const adminExists = await User.findOne({ role: 'ADMIN' });
+    if (adminExists) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'An admin already exists. Use the regular register endpoint with admin authentication.' 
+      });
+    }
+
+    // Check if user already exists
+    let user = await User.findOne({ phone });
+    if (user) {
+      return res.status(400).json({ success: false, message: 'User already exists with that phone number' });
+    }
+
+    // Create first admin
+    user = await User.create({
+      name,
+      phone,
+      password,
+      planType: 'Ahorro Campamento 2027',
+      role: 'ADMIN',
+      needsPasswordChange: false
+    });
+
+    const token = generateToken(user._id);
+
+    console.log('✓ First admin created:', user.phone);
+
+    res.status(201).json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+        planType: user.planType,
+        needsPasswordChange: false,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
