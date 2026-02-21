@@ -8,7 +8,7 @@ const Deposit = require('../models/Deposit');
  */
 exports.getCurrentUser = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id).populate('registeredEvents');
     res.status(200).json({ success: true, data: user });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
