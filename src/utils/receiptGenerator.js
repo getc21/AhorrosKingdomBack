@@ -30,7 +30,8 @@ const generateReceiptPDF = (deposit, user, admin) => {
 
       const doc = new PDFDocument({
         size: 'A4',
-        margin: 50, // Un poco más de margen para que se vea limpio
+        margin: 45,
+        bufferPages: true,
       });
 
       const stream = fs.createWriteStream(filePath);
@@ -38,33 +39,59 @@ const generateReceiptPDF = (deposit, user, admin) => {
       stream.on('error', (err) => reject(err));
       doc.pipe(stream);
 
-      // --- Header ---
-      doc.fontSize(24).font('Helvetica-Bold').text('SISTEMA DE AHORROS ENERGY', { align: 'center' });
-      doc.moveDown(0.2);
-      doc.fontSize(10).font('Helvetica').text('RECIBO DE DEPÓSITO', { align: 'center' });
-      doc.fontSize(9).fillColor('#666').text('Plan de Ahorro Comunitario', { align: 'center' });
+      // --- COLORS (Lime, Green, Teal theme) ---
+      const lime = '#97E332';
+      const green = '#6ABF4B';
+      const teal = '#008A8A';
+      const darkBg = '#0F172A';
+      const lightText = '#F1F5F9';
+      const darkText = '#0F172A';
+
+      // --- Background color (Fondo blanco para mejor visualización) ---
+      doc.fillColor('white').rect(0, 0, doc.page.width, doc.page.height).fill();
+
+      // --- Header con gradiente visual ---
+      doc.fillColor(teal).rect(0, 0, doc.page.width, 120).fill();
+      
+      // Title principal
+      doc.fontSize(32).font('Helvetica-Bold').fillColor(lime).text('BLESS UP', { align: 'center', lineBreak: true }, 50);
+      doc.fontSize(14).font('Helvetica').fillColor(lightText).text('By Energy', { align: 'center' });
+      doc.moveDown(0.8);
+
+      // Divider line
+      doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).strokeColor(lime).lineWidth(2).stroke();
       doc.moveDown(1);
 
-      // --- Función Ayudante para Filas (Evita superposición) ---
+      // Subtitle
+      doc.fontSize(11).font('Helvetica').fillColor(green).text('Plan de Ahorro Energy', { align: 'center' });
+      doc.fontSize(9).fillColor(darkText).font('Helvetica').text('RECIBO DE DEPÓSITO OFICIAL', { align: 'center' });
+      doc.moveDown(1.2);
+
+      // --- Funciones Ayudantes ---
+      const drawSectionTitle = (title) => {
+        doc.fillColor(teal).rect(50, doc.y, 495, 25).fill();
+        doc.fontSize(12).font('Helvetica-Bold').fillColor(lime).text(title, 50, doc.y + 6, { width: 495 });
+        doc.moveDown(1.5);
+      };
+
       const drawRow = (label, value, isBold = false) => {
         const currentY = doc.y;
-        doc.fontSize(10).font('Helvetica-Bold').fillColor('#333').text(label, 50, currentY);
-        doc.fontSize(10).font(isBold ? 'Helvetica-Bold' : 'Helvetica').fillColor('#000').text(value, 180, currentY, { width: 350 });
-        doc.moveDown(0.8); // Espaciado entre líneas
+        doc.fontSize(10).font('Helvetica-Bold').fillColor(green).text(label, 50, currentY);
+        doc.fontSize(10).font(isBold ? 'Helvetica-Bold' : 'Helvetica').fillColor(darkText).text(value, 200, currentY, { width: 345 });
+        doc.moveDown(0.75);
       };
 
       const drawDivider = () => {
-        doc.moveDown(0.5);
-        doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor('#eeeeee').stroke();
-        doc.moveDown(1);
+        doc.moveDown(0.3);
+        doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor(lime).lineWidth(1).stroke();
+        doc.moveDown(0.8);
       };
 
       // --- Información del Recibo ---
-      doc.fontSize(11).font('Helvetica-Bold').fillColor('#000').text('INFORMACIÓN DEL RECIBO');
-      doc.moveDown(0.5);
+      drawSectionTitle('📋 INFORMACIÓN DEL RECIBO');
       
       drawRow('ID Recibo:', deposit._id.toString().slice(-8).toUpperCase());
-      drawRow('Fecha:', new Date(deposit.createdAt).toLocaleDateString('es-BO', {
+      drawRow('Fecha de Registro:', new Date(deposit.createdAt).toLocaleDateString('es-BO', {
         year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
       }));
       drawRow('Evento:', deposit.eventId ? `${deposit.eventId.emoji} ${deposit.eventId.name}` : 'No especificado');
@@ -72,57 +99,67 @@ const generateReceiptPDF = (deposit, user, admin) => {
       drawDivider();
 
       // --- Información del Participante ---
-      doc.fontSize(11).font('Helvetica-Bold').text('INFORMACIÓN DEL PARTICIPANTE');
-      doc.moveDown(0.5);
+      drawSectionTitle('👤 INFORMACIÓN DEL PARTICIPANTE');
       
-      drawRow('Nombre:', user.name);
+      drawRow('Nombre Completo:', user.name);
       drawRow('Teléfono:', user.phone);
-      drawRow('Plan:', user.planType);
-      drawRow('Rol:', user.role);
+      drawRow('Plan de Ahorro:', user.planType);
+      drawRow('Rol en Sistema:', user.role);
 
       drawDivider();
 
-      // --- Detalle del Depósito (Tabla) ---
-      doc.fontSize(11).font('Helvetica-Bold').text('DETALLE DEL DEPÓSITO');
-      doc.moveDown(0.8);
+      // --- Detalle del Depósito (Tabla mejorada) ---
+      drawSectionTitle('💰 DETALLE DEL DEPÓSITO');
 
-      // Encabezado de Tabla
-      const tableTop = doc.y;
-      doc.fontSize(10).font('Helvetica-Bold').text('Concepto', 50, tableTop);
-      doc.text('Monto', 400, tableTop, { align: 'right', width: 145 });
-      
-      doc.moveDown(0.5);
-      doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor('#000').stroke();
-      doc.moveDown(0.5);
-
-      // Fila única de depósito
-      const rowY = doc.y;
-      doc.fontSize(10).font('Helvetica').text('Depósito Registrado', 50, rowY);
-      doc.fontSize(10).font('Helvetica-Bold').fillColor('#2d5016').text(`Bs. ${deposit.amount.toFixed(2)}`, 400, rowY, { align: 'right', width: 145 });
+      // Encabezado de Tabla con fondo
+      doc.fillColor(green).rect(50, doc.y, 495, 22).fill();
+      doc.fontSize(10).font('Helvetica-Bold').fillColor('white').text('CONCEPTO', 60, doc.y + 5);
+      doc.text('MONTO', 400, doc.y - 17, { align: 'right', width: 135 });
       
       doc.moveDown(1.5);
 
-      // --- Resumen de Ahorro (Caja Destacada) ---
-      doc.fillColor('#000').fontSize(11).font('Helvetica-Bold').text('RESUMEN DE AHORRO');
+      // Fila de depósito
+      const rowY = doc.y;
+      doc.fillColor('#f0f0f0').rect(50, rowY - 2, 495, 25).fill();
+      doc.fontSize(11).font('Helvetica').fillColor(darkText).text('Depósito Registrado', 60, rowY + 3);
+      doc.fontSize(12).font('Helvetica-Bold').fillColor(green).text(`Bs. ${deposit.amount.toFixed(2)}`, 400, rowY + 3, { align: 'right', width: 135 });
+      
+      doc.moveDown(1.8);
+
+      // --- Resumen de Ahorro (Caja destacada con colores) ---
+      doc.fillColor(lime).rect(50, doc.y, 495, 30).fill();
+      doc.fontSize(14).font('Helvetica-Bold').fillColor(darkBg).text('RESUMEN DE AHORRO', { align: 'center', lineBreak: false }, 50, doc.y + 8);
+      doc.moveDown(2.2);
+
+      // Resumen más atractivo
+      doc.fillColor(teal).rect(50, doc.y, 235, 40).fill();
+      doc.fontSize(10).font('Helvetica').fillColor('white').text('Este Depósito', 60, doc.y + 5);
+      doc.fontSize(16).font('Helvetica-Bold').fillColor(lime).text(`Bs. ${deposit.amount.toFixed(2)}`, 60, doc.y + 18);
       doc.moveDown(0.5);
 
-      drawRow('Monto de este Depósito:', `Bs. ${deposit.amount.toFixed(2)}`, true);
-      drawRow('Total Ahorrado:', `Bs. ${(user.totalSaved || deposit.amount).toFixed(2)}`, true);
+      doc.fillColor(green).rect(310, doc.y - 40, 235, 40).fill();
+      doc.fontSize(10).font('Helvetica').fillColor('white').text('Total Ahorrado', 320, doc.y - 35);
+      doc.fontSize(16).font('Helvetica-Bold').fillColor(lime).text(`Bs. ${(user.totalSaved || deposit.amount).toFixed(2)}`, 320, doc.y - 22);
       
-      doc.moveDown(1);
+      doc.moveDown(2.5);
 
       // --- Pie de Firma / Registro ---
-      doc.fontSize(9).fillColor('#666').font('Helvetica').text(`Registrado por: ${admin.name}`, { italic: true });
+      doc.fontSize(9).fillColor(darkText).font('Helvetica').text(`✓ Registrado por: ${admin.name}`, 50, doc.y);
+      doc.fontSize(9).fillColor(darkText).font('Helvetica').text(`✓ Verificado y Autorizado por el Sistema BLESS UP`, 50, doc.y + 15);
       
       // --- Footer ---
-      const bottom = doc.page.height - 70;
-      doc.moveTo(50, bottom - 10).lineTo(545, bottom - 10).strokeColor('#cccccc').stroke();
+      const bottom = doc.page.height - 80;
+      doc.moveTo(50, bottom - 20).lineTo(545, bottom - 20).strokeColor(lime).lineWidth(2).stroke();
       
-      doc.fontSize(8).fillColor('#999').font('Helvetica').text(
-        'Este es un recibo automático generado por el sistema de Sistema de ahorros ENERGY. Por favor conserve este comprobante.',
-        50, bottom, { align: 'center', width: 495 }
+      doc.fontSize(8).fillColor(darkText).font('Helvetica').text(
+        '✨ BLESS UP By Energy - Sistema de Ahorros Comunitario ✨',
+        50, bottom + 5, { align: 'center', width: 495 }
       );
-      doc.text(`Generado el: ${new Date().toLocaleString('es-BO')}`, { align: 'center' });
+      doc.fontSize(8).fillColor('#666').font('Helvetica').text(
+        'Este es un recibo oficial y automático generado por el sistema BLESS UP. Guarde este comprobante como referencia de su depósito.',
+        50, bottom + 20, { align: 'center', width: 495 }
+      );
+      doc.fontSize(7).fillColor('#999').font('Helvetica').text(`Generado: ${new Date().toLocaleString('es-BO')}`, { align: 'center' });
 
       doc.end();
 
@@ -187,17 +224,24 @@ const generateWhatsAppLinkWithImage = (phoneNumber, deposit, user, pdfUrl) => {
   // Obtener información del evento
   const eventName = deposit.eventId?.name ? `${deposit.eventId.emoji} ${deposit.eventId.name}` : 'Evento no especificado';
 
-  // Mensaje de WhatsApp
-  const message = `*RECIBO DE DEPÓSITO - SISTEMA DE AHORROS ENERGY*\n\n` +
-    `Hola ${user.name.split(' ')[0]},\n\n` +
-    `Tu depósito ha sido registrado exitosamente:\n\n` +
-    `*Evento:* ${eventName}\n` +
-    `*Monto Depositado:* Bs. ${deposit.amount.toFixed(2)}\n` +
-    `*Ahorrado Hasta Hoy:* Bs. ${totalSaved.toFixed(2)}\n` +
-    `*Plan:* ${user.planType}\n` +
-    `*Fecha:* ${new Date(deposit.createdAt).toLocaleDateString('es-BO')}\n\n` +
-    `*Tu recibo PDF:* ${pdfUrl}\n\n` +
-    `*¡Gracias por tu ahorro!* 💰`;
+  // Mensaje de WhatsApp mejorado
+  const message = `✨ *BLESS UP By Energy* ✨\n` +
+    `*RECIBO DE DEPÓSITO OFICIAL*\n\n` +
+    `Hola ${user.name.split(' ')[0]} 👋,\n\n` +
+    `¡Tu depósito ha sido registrado exitosamente en nuestro sistema!\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `📋 *DETALLES DE TU DEPÓSITO*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `🎯 *Evento:* ${eventName}\n` +
+    `💰 *Monto Depositado:* Bs. ${deposit.amount.toFixed(2)}\n` +
+    `📊 *Total Ahorrado:* Bs. ${totalSaved.toFixed(2)}\n` +
+    `📅 *Fecha:* ${new Date(deposit.createdAt).toLocaleDateString('es-BO')}\n` +
+    `📋 *Plan:* ${user.planType}\n\n` +
+    `📄 *Descarga tu recibo:* ${pdfUrl}\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `¡Gracias por ser parte de BLESS UP! 🚀\n` +
+    `Juntos ahorramos, juntos crecemos 💚\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━━`;
 
   // Codificar mensaje para URL
   const encodedMessage = encodeURIComponent(message);
