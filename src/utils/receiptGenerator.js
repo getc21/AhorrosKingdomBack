@@ -59,7 +59,7 @@ const generateReceiptPDF = (deposit, user, admin) => {
       doc.moveDown(1);
 
       // --- SECCIÓN 1: INFORMACIÓN DEL RECIBO ---
-      doc.fontSize(11).font('Helvetica-Bold').fillColor(teal).text('📋 INFORMACIÓN DEL RECIBO');
+      doc.fontSize(11).font('Helvetica-Bold').fillColor(teal).text('[*] INFORMACIÓN DEL RECIBO');
       doc.moveDown(0.5);
       
       doc.fontSize(10).fillColor(darkText);
@@ -69,13 +69,13 @@ const generateReceiptPDF = (deposit, user, admin) => {
         year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
       })}`);
       
-      const eventName = deposit.eventId ? `${deposit.eventId.emoji} ${deposit.eventId.name}` : 'No especificado';
+      const eventName = deposit.eventId ? `${deposit.eventId.name}` : 'No especificado';
       doc.font('Helvetica-Bold').text('Evento:', { continued: true }).font('Helvetica').text(` ${eventName}`);
       
       doc.moveDown(0.8);
 
       // --- SECCIÓN 2: INFORMACIÓN DEL PARTICIPANTE ---
-      doc.fontSize(11).font('Helvetica-Bold').fillColor(teal).text('👤 INFORMACIÓN DEL PARTICIPANTE');
+      doc.fontSize(11).font('Helvetica-Bold').fillColor(teal).text('[*] INFORMACIÓN DEL PARTICIPANTE');
       doc.moveDown(0.5);
       
       doc.fontSize(10).fillColor(darkText);
@@ -87,7 +87,7 @@ const generateReceiptPDF = (deposit, user, admin) => {
       doc.moveDown(0.8);
 
       // --- SECCIÓN 3: DETALLE DEL DEPÓSITO ---
-      doc.fontSize(11).font('Helvetica-Bold').fillColor(teal).text('💰 DETALLE DEL DEPÓSITO');
+      doc.fontSize(11).font('Helvetica-Bold').fillColor(teal).text('[*] DETALLE DEL DEPÓSITO');
       doc.moveDown(0.5);
 
       // Tabla simple
@@ -135,7 +135,7 @@ const generateReceiptPDF = (deposit, user, admin) => {
       doc.moveDown(0.5);
 
       doc.fontSize(7).fillColor('#999').font('Helvetica').text(
-        '✨ BLESS UP By Energy - Sistema de Ahorros Comunitario ✨',
+        '** BLESS UP By Energy - Sistema de Ahorros Comunitario **',
         { align: 'center' }
       );
       doc.fontSize(7).fillColor('#999').text(
