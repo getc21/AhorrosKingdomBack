@@ -15,6 +15,7 @@ const corsOptions = {
     const allowedOrigins = [
       'http://localhost:3000',
       'https://ahorroskingdomfront.netlify.app',
+      'https://blessupbyenergy.netlify.app',
       process.env.FRONTEND_URL
     ].filter(Boolean); // Remove undefined values
 

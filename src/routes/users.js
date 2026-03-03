@@ -19,11 +19,19 @@ router.put('/me', protect, updateProfile);
 // Get all users (admin)
 router.get('/', protect, authorize('ADMIN'), getAllUsers);
 
-// Get user events
-router.get('/:id/events', protect, authorize('ADMIN'), async (req, res) => {
+// Get user events (user can get their own, admin can get anyone's)
+router.get('/:id/events', protect, async (req, res) => {
   try {
     const User = require('../models/User');
-    const user = await User.findById(req.params.id).populate('registeredEvents');
+    const requestingUser = req.user; // From protect middleware
+    const targetUserId = req.params.id;
+    
+    // User can only get their own events, unless they're ADMIN
+    if (requestingUser.role !== 'ADMIN' && requestingUser._id.toString() !== targetUserId) {
+      return res.status(403).json({ success: false, message: 'Not authorized to view these events' });
+    }
+    
+    const user = await User.findById(targetUserId).populate('registeredEvents');
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
