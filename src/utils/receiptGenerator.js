@@ -30,8 +30,7 @@ const generateReceiptPDF = (deposit, user, admin) => {
 
       const doc = new PDFDocument({
         size: 'A4',
-        margin: 45,
-        bufferPages: true,
+        margin: 40,
       });
 
       const stream = fs.createWriteStream(filePath);
@@ -39,127 +38,111 @@ const generateReceiptPDF = (deposit, user, admin) => {
       stream.on('error', (err) => reject(err));
       doc.pipe(stream);
 
-      // --- COLORS (Lime, Green, Teal theme) ---
+      // --- COLORS ---
       const lime = '#97E332';
       const green = '#6ABF4B';
       const teal = '#008A8A';
-      const darkBg = '#0F172A';
-      const lightText = '#F1F5F9';
       const darkText = '#0F172A';
 
-      // --- Background color (Fondo blanco para mejor visualización) ---
-      doc.fillColor('white').rect(0, 0, doc.page.width, doc.page.height).fill();
-
-      // --- Header con gradiente visual ---
-      doc.fillColor(teal).rect(0, 0, doc.page.width, 120).fill();
+      // --- HEADER ---
+      doc.fontSize(36).font('Helvetica-Bold').fillColor(teal).text('BLESS UP', { align: 'center' });
+      doc.fontSize(12).font('Helvetica').fillColor(green).text('By Energy', { align: 'center' });
+      doc.moveDown(0.3);
       
-      // Title principal
-      doc.fontSize(32).font('Helvetica-Bold').fillColor(lime).text('BLESS UP', { align: 'center', lineBreak: true }, 50);
-      doc.fontSize(14).font('Helvetica').fillColor(lightText).text('By Energy', { align: 'center' });
+      // Línea separadora
+      doc.strokeColor(lime).lineWidth(2).moveTo(50, doc.y).lineTo(555, doc.y).stroke();
       doc.moveDown(0.8);
 
-      // Divider line
-      doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).strokeColor(lime).lineWidth(2).stroke();
+      // Subtítulo
+      doc.fontSize(10).font('Helvetica').fillColor(darkText).text('Plan de Ahorro Energy', { align: 'center' });
+      doc.fontSize(8).fillColor('#666').text('RECIBO DE DEPÓSITO OFICIAL', { align: 'center' });
       doc.moveDown(1);
 
-      // Subtitle
-      doc.fontSize(11).font('Helvetica').fillColor(green).text('Plan de Ahorro Energy', { align: 'center' });
-      doc.fontSize(9).fillColor(darkText).font('Helvetica').text('RECIBO DE DEPÓSITO OFICIAL', { align: 'center' });
-      doc.moveDown(1.2);
-
-      // --- Funciones Ayudantes ---
-      const drawSectionTitle = (title) => {
-        doc.fillColor(teal).rect(50, doc.y, 495, 25).fill();
-        doc.fontSize(12).font('Helvetica-Bold').fillColor(lime).text(title, 50, doc.y + 6, { width: 495 });
-        doc.moveDown(1.5);
-      };
-
-      const drawRow = (label, value, isBold = false) => {
-        const currentY = doc.y;
-        doc.fontSize(10).font('Helvetica-Bold').fillColor(green).text(label, 50, currentY);
-        doc.fontSize(10).font(isBold ? 'Helvetica-Bold' : 'Helvetica').fillColor(darkText).text(value, 200, currentY, { width: 345 });
-        doc.moveDown(0.75);
-      };
-
-      const drawDivider = () => {
-        doc.moveDown(0.3);
-        doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor(lime).lineWidth(1).stroke();
-        doc.moveDown(0.8);
-      };
-
-      // --- Información del Recibo ---
-      drawSectionTitle('📋 INFORMACIÓN DEL RECIBO');
+      // --- SECCIÓN 1: INFORMACIÓN DEL RECIBO ---
+      doc.fontSize(11).font('Helvetica-Bold').fillColor(teal).text('📋 INFORMACIÓN DEL RECIBO');
+      doc.moveDown(0.5);
       
-      drawRow('ID Recibo:', deposit._id.toString().slice(-8).toUpperCase());
-      drawRow('Fecha de Registro:', new Date(deposit.createdAt).toLocaleDateString('es-BO', {
+      doc.fontSize(10).fillColor(darkText);
+      doc.font('Helvetica-Bold').text('ID Recibo:', { continued: true }).font('Helvetica').text(` ${deposit._id.toString().slice(-8).toUpperCase()}`);
+      
+      doc.font('Helvetica-Bold').text('Fecha:', { continued: true }).font('Helvetica').text(` ${new Date(deposit.createdAt).toLocaleDateString('es-BO', {
         year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
-      }));
-      drawRow('Evento:', deposit.eventId ? `${deposit.eventId.emoji} ${deposit.eventId.name}` : 'No especificado');
-
-      drawDivider();
-
-      // --- Información del Participante ---
-      drawSectionTitle('👤 INFORMACIÓN DEL PARTICIPANTE');
+      })}`);
       
-      drawRow('Nombre Completo:', user.name);
-      drawRow('Teléfono:', user.phone);
-      drawRow('Plan de Ahorro:', user.planType);
-      drawRow('Rol en Sistema:', user.role);
-
-      drawDivider();
-
-      // --- Detalle del Depósito (Tabla mejorada) ---
-      drawSectionTitle('💰 DETALLE DEL DEPÓSITO');
-
-      // Encabezado de Tabla con fondo
-      doc.fillColor(green).rect(50, doc.y, 495, 22).fill();
-      doc.fontSize(10).font('Helvetica-Bold').fillColor('white').text('CONCEPTO', 60, doc.y + 5);
-      doc.text('MONTO', 400, doc.y - 17, { align: 'right', width: 135 });
+      const eventName = deposit.eventId ? `${deposit.eventId.emoji} ${deposit.eventId.name}` : 'No especificado';
+      doc.font('Helvetica-Bold').text('Evento:', { continued: true }).font('Helvetica').text(` ${eventName}`);
       
-      doc.moveDown(1.5);
+      doc.moveDown(0.8);
 
-      // Fila de depósito
-      const rowY = doc.y;
-      doc.fillColor('#f0f0f0').rect(50, rowY - 2, 495, 25).fill();
-      doc.fontSize(11).font('Helvetica').fillColor(darkText).text('Depósito Registrado', 60, rowY + 3);
-      doc.fontSize(12).font('Helvetica-Bold').fillColor(green).text(`Bs. ${deposit.amount.toFixed(2)}`, 400, rowY + 3, { align: 'right', width: 135 });
+      // --- SECCIÓN 2: INFORMACIÓN DEL PARTICIPANTE ---
+      doc.fontSize(11).font('Helvetica-Bold').fillColor(teal).text('👤 INFORMACIÓN DEL PARTICIPANTE');
+      doc.moveDown(0.5);
+      
+      doc.fontSize(10).fillColor(darkText);
+      doc.font('Helvetica-Bold').text('Nombre:', { continued: true }).font('Helvetica').text(` ${user.name}`);
+      doc.font('Helvetica-Bold').text('Teléfono:', { continued: true }).font('Helvetica').text(` ${user.phone}`);
+      doc.font('Helvetica-Bold').text('Plan:', { continued: true }).font('Helvetica').text(` ${user.planType}`);
+      doc.font('Helvetica-Bold').text('Rol:', { continued: true }).font('Helvetica').text(` ${user.role}`);
+      
+      doc.moveDown(0.8);
+
+      // --- SECCIÓN 3: DETALLE DEL DEPÓSITO ---
+      doc.fontSize(11).font('Helvetica-Bold').fillColor(teal).text('💰 DETALLE DEL DEPÓSITO');
+      doc.moveDown(0.5);
+
+      // Tabla simple
+      const tableTop = doc.y;
+      doc.fillColor(green).rect(50, doc.y, 515, 24).fill();
+      doc.fontSize(10).font('Helvetica-Bold').fillColor('white').text('CONCEPTO', 60, tableTop + 6);
+      doc.text('MONTO', 450, tableTop + 6, { align: 'right' });
+      
+      doc.moveDown(1.3);
+
+      // Fila de datos
+      doc.fillColor('#f5f5f5').rect(50, doc.y, 515, 28).fill();
+      doc.fontSize(10).font('Helvetica').fillColor(darkText).text('Depósito Registrado', 60, doc.y + 8);
+      doc.fontSize(11).font('Helvetica-Bold').fillColor(green).text(`Bs. ${deposit.amount.toFixed(2)}`, 450, doc.y + 8, { align: 'right', width: 105 });
       
       doc.moveDown(1.8);
 
-      // --- Resumen de Ahorro (Caja destacada con colores) ---
-      doc.fillColor(lime).rect(50, doc.y, 495, 30).fill();
-      doc.fontSize(14).font('Helvetica-Bold').fillColor(darkBg).text('RESUMEN DE AHORRO', { align: 'center', lineBreak: false }, 50, doc.y + 8);
-      doc.moveDown(2.2);
+      // --- SECCIÓN 4: RESUMEN ---
+      doc.fontSize(11).font('Helvetica-Bold').fillColor('white').fillColor(lime).rect(50, doc.y - 5, 515, 30).fill();
+      doc.fontSize(11).text('RESUMEN DE AHORRO', { align: 'center' });
+      doc.moveDown(1.8);
 
-      // Resumen más atractivo
-      doc.fillColor(teal).rect(50, doc.y, 235, 40).fill();
-      doc.fontSize(10).font('Helvetica').fillColor('white').text('Este Depósito', 60, doc.y + 5);
-      doc.fontSize(16).font('Helvetica-Bold').fillColor(lime).text(`Bs. ${deposit.amount.toFixed(2)}`, 60, doc.y + 18);
+      // Dos cajas lado a lado
+      const boxY = doc.y;
+      const boxHeight = 50;
+      
+      // Caja izquierda
+      doc.fillColor(teal).rect(50, boxY, 240, boxHeight).fill();
+      doc.fontSize(9).font('Helvetica').fillColor('white').text('Este Depósito', 60, boxY + 8);
+      doc.fontSize(14).font('Helvetica-Bold').fillColor(lime).text(`Bs. ${deposit.amount.toFixed(2)}`, 60, boxY + 22);
+      
+      // Caja derecha
+      doc.fillColor(green).rect(305, boxY, 260, boxHeight).fill();
+      doc.fontSize(9).font('Helvetica').fillColor('white').text('Total Ahorrado', 315, boxY + 8);
+      doc.fontSize(14).font('Helvetica-Bold').fillColor(lime).text(`Bs. ${(user.totalSaved || deposit.amount).toFixed(2)}`, 315, boxY + 22);
+      
+      doc.moveDown(3.5);
+
+      // --- FOOTER ---
+      doc.fontSize(8).fillColor('#666').font('Helvetica').text(`Registrado por: ${admin.name}`, { align: 'left' });
+      doc.text('Verificado por el Sistema BLESS UP Energy', { align: 'left' });
+      
+      doc.moveDown(0.8);
+      doc.strokeColor(lime).lineWidth(1).moveTo(50, doc.y).lineTo(555, doc.y).stroke();
       doc.moveDown(0.5);
 
-      doc.fillColor(green).rect(310, doc.y - 40, 235, 40).fill();
-      doc.fontSize(10).font('Helvetica').fillColor('white').text('Total Ahorrado', 320, doc.y - 35);
-      doc.fontSize(16).font('Helvetica-Bold').fillColor(lime).text(`Bs. ${(user.totalSaved || deposit.amount).toFixed(2)}`, 320, doc.y - 22);
-      
-      doc.moveDown(2.5);
-
-      // --- Pie de Firma / Registro ---
-      doc.fontSize(9).fillColor(darkText).font('Helvetica').text(`✓ Registrado por: ${admin.name}`, 50, doc.y);
-      doc.fontSize(9).fillColor(darkText).font('Helvetica').text(`✓ Verificado y Autorizado por el Sistema BLESS UP`, 50, doc.y + 15);
-      
-      // --- Footer ---
-      const bottom = doc.page.height - 80;
-      doc.moveTo(50, bottom - 20).lineTo(545, bottom - 20).strokeColor(lime).lineWidth(2).stroke();
-      
-      doc.fontSize(8).fillColor(darkText).font('Helvetica').text(
+      doc.fontSize(7).fillColor('#999').font('Helvetica').text(
         '✨ BLESS UP By Energy - Sistema de Ahorros Comunitario ✨',
-        50, bottom + 5, { align: 'center', width: 495 }
+        { align: 'center' }
       );
-      doc.fontSize(8).fillColor('#666').font('Helvetica').text(
-        'Este es un recibo oficial y automático generado por el sistema BLESS UP. Guarde este comprobante como referencia de su depósito.',
-        50, bottom + 20, { align: 'center', width: 495 }
+      doc.fontSize(7).fillColor('#999').text(
+        'Este es un recibo oficial generado automáticamente. Guarde para sus registros.',
+        { align: 'center' }
       );
-      doc.fontSize(7).fillColor('#999').font('Helvetica').text(`Generado: ${new Date().toLocaleString('es-BO')}`, { align: 'center' });
+      doc.fontSize(7).fillColor('#999').text(`Generado: ${new Date().toLocaleString('es-BO')}`, { align: 'center' });
 
       doc.end();
 
