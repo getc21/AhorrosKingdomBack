@@ -78,6 +78,10 @@ exports.createDeposit = async (req, res) => {
       const totalSavedForReceipt = allDepositsForReceipt.reduce((sum, d) => sum + (d.amount || 0), 0);
       userFull.totalSaved = totalSavedForReceipt;
       
+      // Verificar si es el PRIMER depósito (contar depósitos sin el actual)
+      const depositsBeforeCurrent = await Deposit.find({ userId, eventId, _id: { $ne: deposit._id } });
+      const isFirstDeposit = depositsBeforeCurrent.length === 0;
+      
       // Generar PDF
       const generateReceiptPDF = require('../utils/receiptGenerator').generateReceiptPDF;
       const pdfPath = await generateReceiptPDF(deposit, userFull, admin);
@@ -86,13 +90,28 @@ exports.createDeposit = async (req, res) => {
       const pdfFileName = pdfPath.split('\\').pop() || pdfPath.split('/').pop();
       const pdfUrl = `${process.env.BACKEND_URL || 'http://localhost:5000'}/receipts/${pdfFileName}`;
       
-      // Generar link de WhatsApp con PDF
-      const generateWhatsAppLinkWithImage = require('../utils/receiptGenerator').generateWhatsAppLinkWithImage;
-      const whatsappLink = generateWhatsAppLinkWithImage(userFull.phone, deposit, userFull, pdfUrl);
+      // Generar links de WhatsApp
+      const { generateWhatsAppLinkWithImage, generateFirstDepositWelcomeMessage, generateDepositConfirmationMessage } = require('../utils/receiptGenerator');
+      
+      let whatsappLink = generateWhatsAppLinkWithImage(userFull.phone, deposit, userFull, pdfUrl);
+      let whatsappWelcomeLink = null;
+      let whatsappConfirmationLink = null;
+      
+      if (isFirstDeposit) {
+        // Primer depósito: enviar dos mensajes
+        whatsappWelcomeLink = generateFirstDepositWelcomeMessage(userFull.phone, userFull, event);
+        whatsappConfirmationLink = generateDepositConfirmationMessage(userFull.phone, userFull, deposit);
+      } else {
+        // Depósitos posteriores: enviar solo confirmación
+        whatsappConfirmationLink = generateDepositConfirmationMessage(userFull.phone, userFull, deposit);
+      }
       
       // Agregar datos al objeto de respuesta
       const depositData = deposit.toObject();
-      depositData.whatsappLink = whatsappLink;
+      depositData.whatsappLink = whatsappLink; // Para compatibilidad
+      depositData.whatsappWelcomeLink = whatsappWelcomeLink; // Primer mensaje (si aplica)
+      depositData.whatsappConfirmationLink = whatsappConfirmationLink; // Segundo mensaje
+      depositData.isFirstDeposit = isFirstDeposit;
       depositData.pdfUrl = pdfUrl;
       depositData.totalSaved = totalSaved;
       

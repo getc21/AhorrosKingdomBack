@@ -182,7 +182,71 @@ const convertPDFToImage = async (pdfPath) => {
 };
 
 /**
- * Generar link de WhatsApp con PDF
+ * Generar mensaje de bienvenida para primer depósito
+ */
+const generateFirstDepositWelcomeMessage = (phoneNumber, user, event) => {
+  let formattedPhone = phoneNumber;
+  if (!formattedPhone.startsWith('+')) {
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = formattedPhone.substring(1);
+    }
+    formattedPhone = `591${formattedPhone}`;
+  } else {
+    formattedPhone = formattedPhone.replace('+', '');
+  }
+
+  const eventName = event?.name || 'Nuestro Plan de Ahorro';
+  const eventGoal = event?.goal || 500;
+
+  const message = `🔰*BLESS UP By Energy*🔰\n` +
+    `—Tu plataforma de ahorro—\n\n` +
+    `Comenzamos el camino para vivir una experiencia increíble en el ${eventName} 🌄✨\n\n` +
+    `🎯 *Meta de ahorro:* Bs. ${eventGoal}\n` +
+    `📆 *Depósitos semanales*\n` +
+    `🎊 *Eventos especiales*\n` +
+    `🎁 *Recompensas al finalizar*\n\n` +
+    `*REGLAS IMPORTANTES:*\n\n` +
+    `✅ Depósitos solo en reuniones oficiales.\n` +
+    `✅ Puedes monitorear tu progreso.\n` +
+    `✅ Cambiar tu plan.\n` +
+    `✅ Ver tu historial completo.\n\n` +
+    `❌ No se permiten retiros sin autorización.\n` +
+    `❌ No depósitos fuera de reuniones.\n` +
+    `❌ No montos menores a Bs. 5`;
+
+  const encodedMessage = encodeURIComponent(message);
+  return `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
+};
+
+/**
+ * Generar mensaje de confirmación de depósito con recibo
+ */
+const generateDepositConfirmationMessage = (phoneNumber, user, deposit) => {
+  let formattedPhone = phoneNumber;
+  if (!formattedPhone.startsWith('+')) {
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = formattedPhone.substring(1);
+    }
+    formattedPhone = `591${formattedPhone}`;
+  } else {
+    formattedPhone = formattedPhone.replace('+', '');
+  }
+
+  const message = `🎉💰 *¡Depósito recibido con éxito!*\n\n` +
+    `Por tu registro en la app de ahorro *BLESS UP*, ya tienes Bs. ${deposit.amount.toFixed(2)} abonados a tu cuenta. 🔥\n\n` +
+    `🔰 *BLESS UP:* blessupbyenergy.netlify.app\n\n` +
+    `🔐 *Ingresa y revisa tu progreso cuando quieras:*\n\n` +
+    `👤 *Usuario:* ${user.phone}\n` +
+    `🔑 *Contraseña:* ${user.phone}\n\n` +
+    `‼️ *_NOTA: Recuerda cambiar tu contraseña al ingresar a la app_*\n\n` +
+    `¡Gracias por confiar en BLESS UP!💛`;
+
+  const encodedMessage = encodeURIComponent(message);
+  return `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
+};
+
+/**
+ * Generar link de WhatsApp con PDF (deprecated - usar las nuevas funciones)
  * @param {string} phoneNumber - Número de teléfono boliviano
  * @param {Object} deposit - Objeto de depósito
  * @param {Object} user - Objeto de usuario
@@ -205,7 +269,7 @@ const generateWhatsAppLinkWithImage = (phoneNumber, deposit, user, pdfUrl) => {
   const totalSaved = user.totalSaved || 0;
   
   // Obtener información del evento
-  const eventName = deposit.eventId?.name ? `${deposit.eventId.emoji} ${deposit.eventId.name}` : 'Evento no especificado';
+  const eventName = deposit.eventId?.name ? `${deposit.eventId.name}` : 'No especificado';
 
   // Mensaje de WhatsApp mejorado
   const message = `✨ *BLESS UP By Energy* ✨\n` +
@@ -237,5 +301,7 @@ module.exports = {
   generateReceiptPDF,
   convertPDFToImage,
   generateWhatsAppLinkWithImage,
+  generateFirstDepositWelcomeMessage,
+  generateDepositConfirmationMessage,
 };
 
