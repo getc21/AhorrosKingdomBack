@@ -86,9 +86,13 @@ exports.createDeposit = async (req, res) => {
       const generateReceiptPDF = require('../utils/receiptGenerator').generateReceiptPDF;
       const pdfPath = await generateReceiptPDF(deposit, userFull, admin);
       
-      // Obtener URL del PDF
+      // Obtener SOLO el nombre del archivo del PDF
       const pdfFileName = pdfPath.split('\\').pop() || pdfPath.split('/').pop();
       const pdfUrl = `${process.env.BACKEND_URL || 'http://localhost:5000'}/receipts/${pdfFileName}`;
+      
+      console.log('PDF Path:', pdfPath);
+      console.log('PDF FileName:', pdfFileName);
+      console.log('PDF URL:', pdfUrl);
       
       // Generar links de WhatsApp
       const { generateWhatsAppLinkWithImage, generateFirstDepositWelcomeMessage, generateDepositConfirmationMessage } = require('../utils/receiptGenerator');
@@ -100,10 +104,10 @@ exports.createDeposit = async (req, res) => {
       if (isFirstDeposit) {
         // Primer depósito: enviar dos mensajes
         whatsappWelcomeLink = generateFirstDepositWelcomeMessage(userFull.phone, userFull, event);
-        whatsappConfirmationLink = generateDepositConfirmationMessage(userFull.phone, userFull, deposit, pdfUrl);
+        whatsappConfirmationLink = generateDepositConfirmationMessage(userFull.phone, userFull, deposit, pdfUrl, totalSaved);
       } else {
         // Depósitos posteriores: enviar solo confirmación
-        whatsappConfirmationLink = generateDepositConfirmationMessage(userFull.phone, userFull, deposit, pdfUrl);
+        whatsappConfirmationLink = generateDepositConfirmationMessage(userFull.phone, userFull, deposit, pdfUrl, totalSaved);
       }
       
       // Agregar datos al objeto de respuesta

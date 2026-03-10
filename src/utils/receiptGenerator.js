@@ -221,7 +221,7 @@ const generateFirstDepositWelcomeMessage = (phoneNumber, user, event) => {
 /**
  * Generar mensaje de confirmación de depósito con recibo PDF
  */
-const generateDepositConfirmationMessage = (phoneNumber, user, deposit, pdfUrl) => {
+const generateDepositConfirmationMessage = (phoneNumber, user, deposit, pdfUrl, totalSaved) => {
   let formattedPhone = phoneNumber;
   if (!formattedPhone.startsWith('+')) {
     if (formattedPhone.startsWith('0')) {
@@ -232,12 +232,17 @@ const generateDepositConfirmationMessage = (phoneNumber, user, deposit, pdfUrl) 
     formattedPhone = formattedPhone.replace('+', '');
   }
 
-  const message = `🎉💰 *¡Depósito recibido con éxito!*\n\n` +
-    `Por tu registro en la app de ahorro *BLESS UP*, ya tienes *Bs. ${deposit.amount.toFixed(2)}* abonados a tu cuenta. 🔥\n\n` +
-    `🔰 *BLESS UP:* blessupbyenergy.netlify.app\n\n` +
-    `🔐 *Ingresa y revisa tu progreso cuando quieras*\n\n` +
-    `📄 *Tu recibo:* ${pdfUrl}\n\n` +
-    `¡Gracias por confiar en BLESS UP!💛`;
+  // Calcular total (depósito actual + total anterior)
+  const actualTotal = (totalSaved || 0) + (deposit.amount || 0);
+
+  const message = `[EXITO] ¡Deposito recibido con exito!\n\n` +
+    `DEPOSITO ACTUAL: Bs. ${deposit.amount.toFixed(2)}\n` +
+    `TOTAL AHORRADO: Bs. ${actualTotal.toFixed(2)}\n\n` +
+    `Por tu registro en la app de ahorro BLESS UP, ya tienes *Bs. ${actualTotal.toFixed(2)}* abonados a tu cuenta.\n\n` +
+    `[LINK] BLESS UP: blessupbyenergy.netlify.app\n\n` +
+    `[ACCESO] Ingresa y revisa tu progreso cuando quieras\n\n` +
+    `[PDF] Tu recibo: ${pdfUrl}\n\n` +
+    `¡Gracias por confiar en BLESS UP! [HEART]`;
 
   const encodedMessage = encodeURIComponent(message);
   return `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
