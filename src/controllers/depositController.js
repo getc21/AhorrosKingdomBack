@@ -86,13 +86,18 @@ exports.createDeposit = async (req, res) => {
       const generateReceiptPDF = require('../utils/receiptGenerator').generateReceiptPDF;
       const pdfPath = await generateReceiptPDF(deposit, userFull, admin);
       
-      // Obtener SOLO el nombre del archivo del PDF
-      const pdfFileName = pdfPath.split('\\').pop() || pdfPath.split('/').pop();
-      const pdfUrl = `${process.env.BACKEND_URL || 'http://localhost:5000'}/receipts/${pdfFileName}`;
+      // Obtener SOLO el nombre del archivo (último segmento después del /)
+      const pdfFileName = pdfPath.includes('/') 
+        ? pdfPath.split('/').pop() 
+        : pdfPath.split('\\').pop();
       
-      console.log('PDF Path:', pdfPath);
-      console.log('PDF FileName:', pdfFileName);
-      console.log('PDF URL:', pdfUrl);
+      // Construir URL con dominio de Render
+      const backendUrl = process.env.BACKEND_URL || 'https://ahorroskingdomback.onrender.com';
+      const pdfUrl = `${backendUrl}/receipts/${pdfFileName}`;
+      
+      console.log('📄 PDF Path:', pdfPath);
+      console.log('📄 PDF FileName:', pdfFileName);
+      console.log('📄 PDF URL:', pdfUrl);
       
       // Generar links de WhatsApp
       const { generateWhatsAppLinkWithImage, generateFirstDepositWelcomeMessage, generateDepositConfirmationMessage } = require('../utils/receiptGenerator');
