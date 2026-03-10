@@ -198,7 +198,7 @@ const generateFirstDepositWelcomeMessage = (phoneNumber, user, event) => {
   const eventName = event?.name || 'Nuestro Plan de Ahorro';
   const eventGoal = event?.goal || 500;
 
-  const message = `✨ *BLESS UP By Energy* ✨\n` +
+  const messageText = `✨ *BLESS UP By Energy* ✨\n` +
     `—Tu plataforma de ahorro—\n\n` +
     `Comenzamos el camino para vivir una experiencia increíble en el ${eventName}\n\n` +
     `📍 *Meta de ahorro:* Bs. ${eventGoal}\n` +
@@ -214,7 +214,7 @@ const generateFirstDepositWelcomeMessage = (phoneNumber, user, event) => {
     `✗ No depósitos fuera de reuniones.\n` +
     `✗ No montos menores a Bs. 5`;
 
-  const encodedMessage = encodeURIComponent(message);
+  const encodedMessage = encodeURI(messageText);
   return `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
 };
 
@@ -235,16 +235,18 @@ const generateDepositConfirmationMessage = (phoneNumber, user, deposit, pdfUrl, 
   // Calcular total (depósito actual + total anterior)
   const actualTotal = (totalSaved || 0) + (deposit.amount || 0);
 
-  const message = `✓ ¡Deposito recibido con exito!\n\n` +
+  // Separar el mensaje del link para que la URL no sea codificada
+  const messageText = `✓ ¡Deposito recibido con exito!\n\n` +
     `💰 DEPOSITO ACTUAL: Bs. ${deposit.amount.toFixed(2)}\n` +
     `📊 TOTAL AHORRADO: Bs. ${actualTotal.toFixed(2)}\n\n` +
     `Por tu registro en la app de ahorro BLESS UP, ya tienes *Bs. ${actualTotal.toFixed(2)}* abonados a tu cuenta.\n\n` +
     `🔗 BLESS UP: blessupbyenergy.netlify.app\n\n` +
     `🔓 Ingresa y revisa tu progreso cuando quieras\n\n` +
-    `📄 Tu recibo: ${pdfUrl}\n\n` +
+    `📄 Tu recibo:\n${pdfUrl}\n\n` +
     `¡Gracias por confiar en BLESS UP! 💛`;
 
-  const encodedMessage = encodeURIComponent(message);
+  // Usar encodeURI() en lugar de encodeURIComponent() para preservar estructura de URL
+  const encodedMessage = encodeURI(messageText);
   return `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
 };
 
@@ -275,7 +277,7 @@ const generateWhatsAppLinkWithImage = (phoneNumber, deposit, user, pdfUrl) => {
   const eventName = deposit.eventId?.name ? `${deposit.eventId.name}` : 'No especificado';
 
   // Mensaje de WhatsApp mejorado
-  const message = `✨ *BLESS UP By Energy* ✨\n` +
+  const messageText = `✨ *BLESS UP By Energy* ✨\n` +
     `*RECIBO DE DEPÓSITO OFICIAL*\n\n` +
     `Hola ${user.name.split(' ')[0]} 👋,\n\n` +
     `¡Tu depósito ha sido registrado exitosamente en nuestro sistema!\n\n` +
@@ -287,14 +289,14 @@ const generateWhatsAppLinkWithImage = (phoneNumber, deposit, user, pdfUrl) => {
     `📊 *Total Ahorrado:* Bs. ${totalSaved.toFixed(2)}\n` +
     `📅 *Fecha:* ${new Date(deposit.createdAt).toLocaleDateString('es-BO')}\n` +
     `📋 *Plan:* ${user.planType}\n\n` +
-    `📄 *Descarga tu recibo:* ${pdfUrl}\n\n` +
+    `📄 *Descarga tu recibo:*\n${pdfUrl}\n\n` +
     `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
     `¡Gracias por ser parte de BLESS UP! 🚀\n` +
     `Juntos ahorramos, juntos crecemos 💚\n` +
     `━━━━━━━━━━━━━━━━━━━━━━━━`;
 
-  // Codificar mensaje para URL
-  const encodedMessage = encodeURIComponent(message);
+  // Usar encodeURI() para preservar estructura de URL
+  const encodedMessage = encodeURI(messageText);
   
   // Retornar URL de WhatsApp
   return `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
