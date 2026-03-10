@@ -198,21 +198,21 @@ const generateFirstDepositWelcomeMessage = (phoneNumber, user, event) => {
   const eventName = event?.name || 'Nuestro Plan de Ahorro';
   const eventGoal = event?.goal || 500;
 
-  const message = `🔰*BLESS UP By Energy*🔰\n` +
+  const message = `✨ *BLESS UP By Energy* ✨\n` +
     `—Tu plataforma de ahorro—\n\n` +
-    `Comenzamos el camino para vivir una experiencia increíble en el ${eventName} 🌄✨\n\n` +
-    `🎯 *Meta de ahorro:* Bs. ${eventGoal}\n` +
-    `📆 *Depósitos semanales*\n` +
+    `Comenzamos el camino para vivir una experiencia increíble en el ${eventName}\n\n` +
+    `📍 *Meta de ahorro:* Bs. ${eventGoal}\n` +
+    `📅 *Depósitos semanales*\n` +
     `🎊 *Eventos especiales*\n` +
     `🎁 *Recompensas al finalizar*\n\n` +
     `*REGLAS IMPORTANTES:*\n\n` +
-    `✅ Depósitos solo en reuniones oficiales.\n` +
-    `✅ Puedes monitorear tu progreso.\n` +
-    `✅ Cambiar tu plan.\n` +
-    `✅ Ver tu historial completo.\n\n` +
-    `❌ No se permiten retiros sin autorización.\n` +
-    `❌ No depósitos fuera de reuniones.\n` +
-    `❌ No montos menores a Bs. 5`;
+    `✓ Depósitos solo en reuniones oficiales.\n` +
+    `✓ Puedes monitorear tu progreso.\n` +
+    `✓ Cambiar tu plan.\n` +
+    `✓ Ver tu historial completo.\n\n` +
+    `✗ No se permiten retiros sin autorización.\n` +
+    `✗ No depósitos fuera de reuniones.\n` +
+    `✗ No montos menores a Bs. 5`;
 
   const encodedMessage = encodeURIComponent(message);
   return `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
@@ -235,14 +235,14 @@ const generateDepositConfirmationMessage = (phoneNumber, user, deposit, pdfUrl, 
   // Calcular total (depósito actual + total anterior)
   const actualTotal = (totalSaved || 0) + (deposit.amount || 0);
 
-  const message = `[EXITO] ¡Deposito recibido con exito!\n\n` +
-    `DEPOSITO ACTUAL: Bs. ${deposit.amount.toFixed(2)}\n` +
-    `TOTAL AHORRADO: Bs. ${actualTotal.toFixed(2)}\n\n` +
+  const message = `✓ ¡Deposito recibido con exito!\n\n` +
+    `💰 DEPOSITO ACTUAL: Bs. ${deposit.amount.toFixed(2)}\n` +
+    `📊 TOTAL AHORRADO: Bs. ${actualTotal.toFixed(2)}\n\n` +
     `Por tu registro en la app de ahorro BLESS UP, ya tienes *Bs. ${actualTotal.toFixed(2)}* abonados a tu cuenta.\n\n` +
-    `[LINK] BLESS UP: blessupbyenergy.netlify.app\n\n` +
-    `[ACCESO] Ingresa y revisa tu progreso cuando quieras\n\n` +
-    `[PDF] Tu recibo: ${pdfUrl}\n\n` +
-    `¡Gracias por confiar en BLESS UP! [HEART]`;
+    `🔗 BLESS UP: blessupbyenergy.netlify.app\n\n` +
+    `🔓 Ingresa y revisa tu progreso cuando quieras\n\n` +
+    `📄 Tu recibo: ${pdfUrl}\n\n` +
+    `¡Gracias por confiar en BLESS UP! 💛`;
 
   const encodedMessage = encodeURIComponent(message);
   return `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
