@@ -100,10 +100,10 @@ exports.createDeposit = async (req, res) => {
       if (isFirstDeposit) {
         // Primer depósito: enviar dos mensajes
         whatsappWelcomeLink = generateFirstDepositWelcomeMessage(userFull.phone, userFull, event);
-        whatsappConfirmationLink = generateDepositConfirmationMessage(userFull.phone, userFull, deposit);
+        whatsappConfirmationLink = generateDepositConfirmationMessage(userFull.phone, userFull, deposit, pdfUrl);
       } else {
         // Depósitos posteriores: enviar solo confirmación
-        whatsappConfirmationLink = generateDepositConfirmationMessage(userFull.phone, userFull, deposit);
+        whatsappConfirmationLink = generateDepositConfirmationMessage(userFull.phone, userFull, deposit, pdfUrl);
       }
       
       // Agregar datos al objeto de respuesta
