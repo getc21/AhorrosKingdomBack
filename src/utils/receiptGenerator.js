@@ -65,8 +65,8 @@ const generateReceiptPDF = (deposit, user, admin) => {
       doc.fontSize(10).fillColor(darkText);
       doc.font('Helvetica-Bold').text('ID Recibo:', { continued: true }).font('Helvetica').text(` ${deposit._id.toString().slice(-8).toUpperCase()}`);
       
-      doc.font('Helvetica-Bold').text('Fecha:', { continued: true }).font('Helvetica').text(` ${new Date(deposit.createdAt).toLocaleDateString('es-BO', {
-        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
+      doc.font('Helvetica-Bold').text('Fecha:', { continued: true }).font('Helvetica').text(` ${new Date(deposit.createdAt).toLocaleString('es-BO', {
+        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/La_Paz'
       })}`);
       
       const eventName = deposit.eventId ? `${deposit.eventId.name}` : 'No especificado';
@@ -287,7 +287,7 @@ const generateWhatsAppLinkWithImage = (phoneNumber, deposit, user, pdfUrl) => {
     `🎯 *Evento:* ${eventName}\n` +
     `💰 *Monto Depositado:* Bs. ${deposit.amount.toFixed(2)}\n` +
     `📊 *Total Ahorrado:* Bs. ${totalSaved.toFixed(2)}\n` +
-    `📅 *Fecha:* ${new Date(deposit.createdAt).toLocaleDateString('es-BO')}\n` +
+    `📅 *Fecha:* ${new Date(deposit.createdAt).toLocaleDateString('es-BO', { timeZone: 'America/La_Paz' })}\n` +
     `📋 *Plan:* ${user.planType}\n\n` +
     `📄 *Descarga tu recibo:*\n${pdfUrl}\n\n` +
     `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
